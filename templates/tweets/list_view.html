@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}
+List Tweet | {{block.super}}
+{% endblock title %}
+
+{% block script %}
+<script type="text/javascript">
+
+function getParameterByName(name, url) {
+    if (!url){
+      url = window.location.href;}
+    name = name.replace(/[\[\]]/g, '\\$&');
+    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+}
+
+$(document).ready(function(){
+var query = getParameterByName('q');
+var tweetList = [];
+var nextTweetUrl;
+
+function attachTweet(tvalue, prepend){
+  var dateDisplay = tvalue.timesince
+  var tweetContent = tvalue.content
+  var tweetUser = tvalue.user
+  if(prepend==true){
+    $("#tweet-container").prepend(
+      "<div class='media'><div class='media-body'>" + tweetContent + "<br> via " + tweetUser.username + " | " + dateDisplay + " | " + "<a href='#'>View</a>" +"</div></div><hr>"
+    )
+  }else{
+    $("#tweet-container").append(
+      "<div class='media'><div class='media-body'>" + tweetContent + "<br> via " + tweetUser.username + " | " + dateDisplay + " | " + "<a href='#'>View</a>" +"</div></div><hr>"
+    )
+  }
+
+}
+
+function parseTweets(){
+  if (tweetList == 0){
+    $("#tweet-container").text("No tweets found")
+  } else {
+    // tweets exist, parse & display them
+  $.each(tweetList, function(key,value){
+    //console.log(key)
+    //console.log(value.user)
+    //console.log(value.content)
+    var tweetKey = key
+    attachTweet(value)
+  })
+}
+}
+
+function fetchTweets(url){
+  var fetchUrl;
+  if(!url){
+    fetchUrl = "/api/tweet/";
+  } else {
+    fetchUrl = url;
+  }
+  $.ajax({
+     url: fetchUrl, //"/api/tweet/",
+     //url: "{% url 'tweet-api:listapi' %}",
+     data: {
+       'q': query
+     },
+     method: "GET",
+     success: function(data){
+       //console.log(data)
+       //tweetList = data;
+       //if applying rest pagination !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       tweetList = data.results;
+       if(data.next){
+        nextTweetUrl = data.next;
+      } else {
+        $("#loadmore").css("display", "none");
+      }
+       parseTweets(); //pentru serach
+     },
+     error: function(data){
+       console.log("error");
+       console.log(data);
+     }
+  })
+}
+
+fetchTweets();
+//pagination !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+$("#loadmore").click(function(event){
+  event.preventDefault();
+  if(nextTweetUrl){
+    fetchTweets(nextTweetUrl);
+  }
+})
+
+//Counting characters
+var charStart = 140;
+var charsCurrent = 0;
+$("#tweet-form").append("<span id='tweetCharLeft'>"+charStart+"</span>")
+$("#tweet-form textarea").keyup(function(event){
+  //console.log(event.key, event.timeStamp);
+  var tweetValue = $(this).val();
+  charsCurrent = charStart - tweetValue.length;
+  $("#tweetCharLeft").text(charsCurrent);
+  if(charsCurrent > 0){
+    $("#tweetCharLeft").removeClass("grey-color");
+    $("#tweetCharLeft").removeClass("red-color");
+  }else if (charsCurrent == 0){
+    $("#tweetCharLeft").removeClass("red-color");
+    $("#tweetCharLeft").addClass("grey-color");
+  }else if (charsCurrent < 0){
+    $("#tweetCharLeft").removeClass("grey-color");
+    $("#tweetCharLeft").addClass("red-color");
+  }
+});
+
+//form
+ $("#tweet-form").submit(function(event){
+   event.preventDefault();
+   //console.log(event);
+   console.log($(this).serialize());
+   var formData = $(this).serialize();
+   if (charsCurrent >= 0){
+   $.ajax({
+      url: "/api/tweet/create/",
+      //url: "{% url 'tweet-api:listapi' %}",
+      data:formData,
+      method: "POST",
+      success: function(data){
+        //console.log(data)
+        //fetchTweets();
+        //tweetList = data;
+        //parseTweets(); //pentru serach
+        attachTweet(data, true);
+        $("form").find("textarea").val("");
+        $("form").find("textarea").focus();
+      },
+      error: function(data){
+        console.log("error")
+        console.log(data.statusText)
+        console.log(data.status)
+      }
+   })
+}
+else{
+  console.log("Cannot send, tweet too long!");
+}
+
+ });
+
+});
+</script>
+{% endblock %}
+
+
+{% block content %}
+<!-- {% include "tweets/search_form.html" %} <br> -->
+
+<div class="row">
+<div class="col-sm-3 col-xs-12" style='background-color:red; height:20%;'>
+<h1>{{ request.user }}</h1>
+</div>
+<div class="col-sm-9">
+  {% if not request.GET.q %}
+  <div class=''>
+    <form class="form" action="{% url 'create' %}" method="POST" id="tweet-form">
+    {% csrf_token %}
+    {{form.as_p}}
+    <input class="btn btn-primary" type="submit" value="Tweet">
+    </form>
+    </div>
+    <hr>
+  {% endif %}
+
+  <div id="tweet-container">
+
+  </div>
+  <a href="#" id='loadmore'>Load More Tweets</a>
+
+</div>
+</div>
+{% endblock content %}

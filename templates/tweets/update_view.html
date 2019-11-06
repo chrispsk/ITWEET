@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}
+Update Tweet | {{block.super}}
+{% endblock title %}
+
+{% block content %}
+
+<b>{{form.instance.content}}</b>
+{% if form.instance.user == request.user %}
+<form method="POST" action=".">{% csrf_token %}
+{{form.as_p}}
+<input type="submit" value="Update">
+</form>
+
+{% else %}
+
+<p>You are not allowed to change this</p>
+
+{% endif %}
+
+{% endblock content %}

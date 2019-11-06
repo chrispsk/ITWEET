@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}
+Create Tweet | {{block.super}}
+{% endblock title %}
+
+{% block content %}
+<div class="row">
+  <div class="col-sm-8 col-sm-offset-2">
+<form class="form" action="" method="POST">
+{% csrf_token %}
+{{form.as_p}}
+<input class="btn btn-primary" type="submit" value="Tweet">
+</form>
+</div>
+</div>
+{% endblock content %}

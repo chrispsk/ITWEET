@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}
+Delete Tweet | {{block.super}}
+{% endblock title %}
+
+{% block content %}
+
+{% if obj.user == request.user %}
+
+<form action="." method="POST">
+  Are you sure you want to delete this post?
+  {% csrf_token %}
+<input type="submit" value="Yes">
+
+<a href="/tweet/{{obj.id}}">Cancel</a>
+</form>
+
+{% else %}
+<p>You are not allowed to delete this</p>
+
+{% endif %}
+
+{% endblock content %}
